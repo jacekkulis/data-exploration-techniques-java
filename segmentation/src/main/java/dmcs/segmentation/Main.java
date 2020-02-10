@@ -18,16 +18,20 @@ public class Main {
 
         Database database = new Database(path.toString());
         List<History> histories = new ArrayList<>();
+        //List<Double> distances = new ArrayList<>();
+
         int k = Integer.parseInt(args[0]);
         for (int i = 1; i < k; i++ ) {
             KMeans kMeans = new KMeans(i, database);
             kMeans.setCollectHistory(true);
             kMeans.execute(Integer.parseInt(args[1]));
+            //distances.add(kMeans.getHistory().getDistanceSum());
             histories.add(kMeans.getHistory());
         }
-        System.out.println(histories);
+        //System.out.println(histories);
         LineChart demo = new LineChart("", "", histories);
         demo.pack();
+
         demo.setVisible(true);
     }
 }

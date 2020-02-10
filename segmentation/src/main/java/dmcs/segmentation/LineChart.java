@@ -7,33 +7,34 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.DefaultXYDataset;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.List;
 
 public class LineChart extends JFrame {
     public LineChart(String applicationTitle, String chartTitle, List<History> history) {
         super(applicationTitle);
         // This will create the dataset
-        DefaultXYDataset dataset = createDataset(history);
-        // based on the dataset we create the chart
-        JFreeChart chart = createChart(dataset, chartTitle);
-        // we put the chart into a panel
-        ChartPanel chartPanel = new ChartPanel(chart);
-        // default size
-        chartPanel.setPreferredSize(new java.awt.Dimension(500, 270));
-        // add it to our application
-        setContentPane(chartPanel);
+        DefaultXYDataset dataset1 = createDataset(extractCentroidSum(history), "centroid");
+        DefaultXYDataset dataset2= createDataset(extractDistSumSeries(history), "distance");
 
+        ChartPanel panelCentroid = new ChartPanel(createChart(dataset1, "Centroid"));
+        ChartPanel panelDistance = new ChartPanel(createChart(dataset2, "Distance"));
+
+        Dimension prefDim = new Dimension(400, 300);
+        panelCentroid.setPreferredSize(prefDim);
+        panelDistance.setPreferredSize(prefDim);
+
+
+        setLayout(new FlowLayout());
+        getContentPane().add(panelCentroid);
+        getContentPane().add(panelDistance);
+        setBounds(10, 10, 800, 500);
+        setVisible(true);
     }
 
-    /**
-     * Creates a sample dataset
-     */
-    private DefaultXYDataset createDataset(List<History> history) {
+    private DefaultXYDataset createDataset(double[][] series, String seriesName) {
         DefaultXYDataset result = new DefaultXYDataset();
-        double[][] centroidSumSeries = extractCentroidSum(history);
-        double[][] distSumSeries = extractDistSumSeries(history);
-        result.addSeries("CentroidSum", centroidSumSeries);
-        result.addSeries("DistSum", distSumSeries);
+        result.addSeries(seriesName, series);
         return result;
 
     }
@@ -64,19 +65,18 @@ public class LineChart extends JFrame {
      * Creates a chart
      */
     private JFreeChart createChart(DefaultXYDataset dataset, String title) {
-
-        JFreeChart chart = ChartFactory.createXYLineChart(
+        JFreeChart chart = ChartFactory.createScatterPlot(
                 title,                  // chart title
-                "",
-                "",
+                "X-Axis",
+                "Y-Axis",
                 dataset                // data
 
         );
 
+        chart.setBorderVisible(true);
+
         XYPlot plot = (XYPlot) chart.getPlot();
-        plot.setForegroundAlpha(0.5f);
+        plot.setBackgroundPaint(new Color(255,228,196));
         return chart;
-
     }
-
 }

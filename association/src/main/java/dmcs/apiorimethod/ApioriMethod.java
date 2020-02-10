@@ -1,12 +1,13 @@
 package dmcs.apiorimethod;
 
 import org.apache.commons.math3.util.Combinations;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ApioriMethod {
 
-    private static final float FREQUENCY = 1f;
+    private static final float THRESHOLD_SUPPORT = 10f;
 
     private Database database;
 
@@ -16,22 +17,24 @@ public class ApioriMethod {
         this.database = database;
     }
 
-    public static ApioriMethod ofDatabase(Database database) {
+    static ApioriMethod ofDatabase(Database database) {
         return new ApioriMethod(database);
     }
 
-    public void execute(int k) {
-        //first iteration - get sets with frequency
-        sets = frequencyTest();
+    void execute(int k) {
+        System.out.println("Starting with threshold support " + THRESHOLD_SUPPORT);
 
-        System.out.println("[AVG FREQUENCY] = " + sets.stream().map(this::getFrequency)
+        //first iteration - get sets with frequency that are valid with threshold
+        sets = frequencyFiltering();
+
+        System.out.println("[AVG THRESHOLD_SUPPORT] = " + sets.stream().map(this::getFrequency)
                 .mapToDouble(p -> p)
                 .average()
                 .getAsDouble());
 
         for (int i = 1; i < k; i++) {
             apioriGen();
-            System.out.println("[AVG FREQUENCY] = "  + sets.stream().map(this::getFrequency)
+            System.out.println("[AVG THRESHOLD_SUPPORT] = " + sets.stream().map(this::getFrequency)
                     .mapToDouble(p -> p)
                     .average()
                     .getAsDouble());
@@ -39,37 +42,41 @@ public class ApioriMethod {
     }
 
     private void apioriGen() {
-        //create pairs
+        //make pairs
         Combinations combinations = new Combinations(sets.size(), 2);
         List<List<String>> newSets = new ArrayList<>();
 
+        //iterate through pairs and append if frequency is greater or even frequency threshold
         for (int[] combination : combinations) {
-            connectIfContains(sets.get(combination[0]), sets.get(combination[1]))
-                    .filter(set -> getFrequency(set) >= FREQUENCY)
+            appendIfContains(sets.get(combination[0]), sets.get(combination[1]))
+                    .filter(set -> getFrequency(set) >= THRESHOLD_SUPPORT)
                     .ifPresent(newSets::add);
         }
 
         sets = newSets;
     }
 
-    private List<List<String>> frequencyTest() {
+    private List<List<String>> frequencyFiltering() {
         return database.data.stream()
                 .flatMap(Collection::stream)
                 .distinct()
                 .map(Collections::singletonList)
-                .filter(set -> getFrequency(set) >= FREQUENCY)
+                .filter(set -> getFrequency(set) >= THRESHOLD_SUPPORT)
                 .collect(Collectors.toList());
     }
 
-    public float getFrequency(List<String> set) {
-        float l = (float) database.data.stream()
-                .filter(transaction -> transaction.containsAll(set))
-                .count()
-                / database.data.size();
-        return l * 100;
+    float getFrequency(List<String> set) {
+        float l = (float) database.data
+                .stream()
+                .filter(t -> t.containsAll(set))
+                .count();
+        l = l / database.data.size();
+        l *= 1000;
+        // System.out.println(l);
+        return l;
     }
 
-    private Optional<List<String>> connectIfContains(List<String> one, List<String> second) {
+    private Optional<List<String>> appendIfContains(List<String> one, List<String> second) {
         if (one.size() != second.size()) {
             throw new RuntimeException();
         }
